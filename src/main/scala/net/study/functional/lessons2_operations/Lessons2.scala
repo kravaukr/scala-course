@@ -1,6 +1,6 @@
 package net.study.functional.lessons2_operations
 
-object Lessons2 extends App {
+object Lessons3 extends App {
 
   val seqInt = Seq(1, 2, 3, 4, 5, 6, 7, 8, 9)
   //копютація
