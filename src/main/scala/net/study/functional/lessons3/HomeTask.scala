@@ -32,22 +32,67 @@ object HomeTask extends App {
     PaymentInfoDto(4, Some("customerC"), Some(1000), Some(200), None)
   )
 
-  private val result: Seq[PaymentInfo] = for {
+
+  private val result1: Seq[PaymentInfo] = for {
+    dto <- payments.distinct
+    sum <- dto.sum match {
+      case Some(value) => Some(value)
+      case None => PaymentCenter.getPaymentSum(dto.paymentId)
+    }
+    tax = dto.tax match {
+      case Some(value) => value
+      case None => if (sum > 100L) (sum * 0.2).toLong else 0L
+    }
+    desc = dto.desc match {
+      case Some(value) => value
+      case None => "technical"
+    }
+  } yield PaymentInfo(dto.paymentId, sum, tax, desc)
+
+  private val result1_1: Seq[PaymentInfo] = for {
+    dto <- payments.distinct
+    sum <- dto.sum match {
+      case Some(value) => Some(value)
+      case None => PaymentCenter.getPaymentSum(dto.paymentId)
+    }
+  } yield {
+    val tax = dto.tax match {
+      case Some(value) => value
+      case None => if (sum > 100L) (sum * 0.2).toLong else 0L
+    }
+    val desc = dto.desc match {
+      case Some(value) => value
+      case None => "technical"
+    }
+    PaymentInfo(dto.paymentId, sum, tax, desc)
+  }
+
+
+
+
+
+  private val result2: Seq[PaymentInfo] = for {
     dto <- payments.distinct
     sum <- dto.sum.orElse(PaymentCenter.getPaymentSum(dto.paymentId))
-    tax = dto.tax.getOrElse(if (sum > 100L || sum < 0L) (sum * 0.2).toLong else 0L)
+    tax = dto.tax.getOrElse(if (sum > 100L) (sum * 0.2).toLong else 0L)
     desc = dto.desc.getOrElse("technical")
   } yield PaymentInfo(dto.paymentId, sum, tax, desc)
 
-  private val paymentTax = (sum: Long) =>  if (sum > 100L || sum < 0L) (sum * 0.2).toLong else 0L
 
-  private val result2: Seq[PaymentInfo] = for {
+
+
+
+
+  private val paymentTax = (sum: Long) => if (sum > 100L) (sum * 0.2).toLong else 0L
+
+  private val result3: Seq[PaymentInfo] = for {
     dto <- payments.distinct
     sum <- dto.sum.orElse(getPaymentSum(dto.paymentId))
   } yield PaymentInfo(dto.paymentId, sum, dto.tax.getOrElse(paymentTax(sum)), dto.desc.getOrElse("technical"))
 
 
-
-  println(result2)
+  println(result1.equals(result2))
+  println(result2.equals(result3))
+  println(result1)
 
 }
