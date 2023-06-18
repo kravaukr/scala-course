@@ -1,5 +1,7 @@
 package net.study.functional.lessons3
 
+import net.study.functional.lessons3.HomeTask.PaymentCenter.getPaymentSum
+
 object HomeTask extends App {
 
   // if sum not submitted, precise in payment service. In case not found remove from final report.
@@ -37,11 +39,15 @@ object HomeTask extends App {
     desc = dto.desc.getOrElse("technical")
   } yield PaymentInfo(dto.paymentId, sum, tax, desc)
 
+  private val paymentTax = (sum: Long) =>  if (sum > 100L || sum < 0L) (sum * 0.2).toLong else 0L
+
   private val result2: Seq[PaymentInfo] = for {
     dto <- payments.distinct
-    sum <- dto.sum.orElse(PaymentCenter.getPaymentSum(dto.paymentId))
-  } yield PaymentInfo(dto.paymentId, sum, dto.tax.getOrElse(if (sum > 100L || sum < 0L) (sum * 0.2).toLong else 0L), dto.desc.getOrElse("technical"))
+    sum <- dto.sum.orElse(getPaymentSum(dto.paymentId))
+  } yield PaymentInfo(dto.paymentId, sum, dto.tax.getOrElse(paymentTax(sum)), dto.desc.getOrElse("technical"))
 
-  println(result)
+
+
+  println(result2)
 
 }
