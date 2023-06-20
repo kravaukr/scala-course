@@ -69,18 +69,12 @@ object HomeTask extends App {
 
 
 
-
-
   private val result2: Seq[PaymentInfo] = for {
     dto <- payments.distinct
     sum <- dto.sum.orElse(PaymentCenter.getPaymentSum(dto.paymentId))
     tax = dto.tax.getOrElse(if (sum > 100L) (sum * 0.2).toLong else 0L)
     desc = dto.desc.getOrElse("technical")
   } yield PaymentInfo(dto.paymentId, sum, tax, desc)
-
-
-
-
 
 
   private val paymentTax = (sum: Long) => if (sum > 100L) (sum * 0.2).toLong else 0L
@@ -91,8 +85,8 @@ object HomeTask extends App {
   } yield PaymentInfo(dto.paymentId, sum, dto.tax.getOrElse(paymentTax(sum)), dto.desc.getOrElse("technical"))
 
 
-  println(result1.equals(result2))
-  println(result2.equals(result3))
+//  println(result1.equals(result2))
+//  println(result2.equals(result3))
   println(result1)
 
 }
