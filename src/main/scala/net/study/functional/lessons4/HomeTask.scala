@@ -72,19 +72,28 @@ object HomeTask extends App {
 
   private def getListMsisdn(subs: Seq[Subscriber]) = subs.map(s => s.msisdn)
 
-  private def toSubscriberInfo(s: (String, Int), subs: Seq[Subscriber]): SubscriberInfo =
-    SubscriberInfo(s._1, subs.filter(p => p.msisdn == s._1).head.subscriberType, s._2 == 1)
+  private def toSubscriberInfo(s: (String, Int), subs: Map[String, Subscriber]): SubscriberInfo =
+    subs.get(s._1) match {
+      case Some(sub) => SubscriberInfo(s._1, sub.subscriberType, s._2 == 1)
+      case None => SubscriberInfo(s._1, 0, s._2 == 1) // set default subscriberType
+    }
 
   private def tryGetDataFromMainSource(getDataFromMainSourceIsRisky: Boolean, subs: Seq[Subscriber]) =
-    Try(getDataFromMainSource(getDataFromMainSourceIsRisky, getListMsisdn(subs)).map(toSubscriberInfo(_, subs)))
+    Try(getDataFromMainSource(getDataFromMainSourceIsRisky, getListMsisdn(subs)))
 
   private def tryGetDataFromAlternativeSource(getDataFromAlternativeSourceIsRisky: Boolean, subs: Seq[Subscriber]) =
-    Try(getDataFromAlternativeSource(getDataFromAlternativeSourceIsRisky, getListMsisdn(subs)).map(toSubscriberInfo(_, subs)))
+    Try(getDataFromAlternativeSource(getDataFromAlternativeSourceIsRisky, getListMsisdn(subs)))
 
   private def usingSource[A, R <: Closeable](closeable: R)(body: R => A): A = try body(closeable) finally closeable.close()
 
-  private def enrichedSubs(getDataFromMainSourceIsRisky: Boolean, getDataFromAlternativeSourceIsRisky: Boolean, subs: Seq[Subscriber]) =
+  private def enrichedSubs(additionData: Seq[(String, Int)], subs: Seq[Subscriber]) = {
+    val subsMap = subs.map(sub => sub.msisdn -> sub).toMap
+    additionData.map(toSubscriberInfo(_, subsMap))
+  }
+
+  private def getAdditionalData(getDataFromMainSourceIsRisky: Boolean, getDataFromAlternativeSourceIsRisky: Boolean, subs: Seq[Subscriber]) =
     tryGetDataFromMainSource(getDataFromMainSourceIsRisky, subs).orElse(tryGetDataFromAlternativeSource(getDataFromAlternativeSourceIsRisky, subs)).toEither
+
 
   private def sendSubsInfoToProvider(sendToProviderIsRisky: Boolean, subsInfo: Seq[SubscriberInfo]) =
     Try(sendToProvider(sendToProviderIsRisky, subsInfo)).toEither
@@ -96,9 +105,10 @@ object HomeTask extends App {
                     sendToProviderIsRisky: Boolean,
                     fileSource: String): Either[Error, Int] = {
     val result = for {
-      subs     <- getSubsFromSource(getFileIsRisky, fileSource)
-      subsInfo <- enrichedSubs(getDataFromMainSourceIsRisky, getDataFromAlternativeSourceIsRisky, subs)
-      _        <- sendSubsInfoToProvider(sendToProviderIsRisky, subsInfo)
+      subs         <- getSubsFromSource(getFileIsRisky, fileSource)
+      additionData <- getAdditionalData(getDataFromMainSourceIsRisky, getDataFromAlternativeSourceIsRisky, subs)
+      subsInfo     =  enrichedSubs(additionData, subs)
+      _            <- sendSubsInfoToProvider(sendToProviderIsRisky, subsInfo)
     } yield subsInfo.size
 
     println(result)
