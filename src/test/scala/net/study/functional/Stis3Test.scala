@@ -18,7 +18,6 @@ class Stis3Test extends WordSpec with OptionValues with Matchers {
       }
     }
 
-
     "trying to get data when the sources are not available" should {
       "return Left(AllSourceTemporaryUnavailableError)" in {
         val response = enrichAndSend(false, true, true, false, fileSource)
@@ -32,7 +31,6 @@ class Stis3Test extends WordSpec with OptionValues with Matchers {
         response shouldBe Left(ThirdPartySystemError)
       }
     }
-
 
     "enrich the data and send it to the provider successfully" should {
       "return Right with the count of Subscribers" in {
