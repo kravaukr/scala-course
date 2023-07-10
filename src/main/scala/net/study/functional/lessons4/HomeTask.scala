@@ -37,6 +37,8 @@ object HomeTask extends App {
 
   case object ThirdPartySystemError extends Error //if 3-d party system error
 
+  case object AnyOtherError extends Error
+
   case class TemporaryUnavailableException(string: String) extends Exception
 
   case class ThirdPartySystemException(string: String) extends Exception
@@ -111,12 +113,14 @@ object HomeTask extends App {
       _            <- sendSubsInfoToProvider(sendToProviderIsRisky, subsInfo)
     } yield subsInfo.size
 
-    println(result)
+//    println(result)
 
     result.left.map {
       case _: NetworkException => NetworkError
       case _: TemporaryUnavailableException => AllSourceTemporaryUnavailableError
       case _: ThirdPartySystemException => ThirdPartySystemError
+      case unpredictable: Throwable => println(unpredictable)
+        AnyOtherError
     }
   }
 

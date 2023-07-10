@@ -32,61 +32,100 @@ object HomeTask extends App {
     PaymentInfoDto(4, Some("customerC"), Some(1000), Some(200), None)
   )
 
+  def filterObject = (l: Long) => l > 100
 
-  private val result1: Seq[PaymentInfo] = for {
-    dto <- payments.distinct
-    sum <- dto.sum match {
-      case Some(value) => Some(value)
-      case None => PaymentCenter.getPaymentSum(dto.paymentId)
-    }
-    tax = dto.tax match {
-      case Some(value) => value
-      case None => if (sum > 100L) (sum * 0.2).toLong else 0L
-    }
-    desc = dto.desc match {
-      case Some(value) => value
-      case None => "technical"
-    }
-  } yield PaymentInfo(dto.paymentId, sum, tax, desc)
+  def computeTaxSum(sumToTax: Long): Option[Long] = Some(sumToTax) filter filterObject map (_ * 20 / 100) orElse Some(0)
 
-  private val result1_1: Seq[PaymentInfo] = for {
-    dto <- payments.distinct
-    sum <- dto.sum match {
-      case Some(value) => Some(value)
-      case None => PaymentCenter.getPaymentSum(dto.paymentId)
-    }
-  } yield {
-    val tax = dto.tax match {
-      case Some(value) => value
-      case None => if (sum > 100L) (sum * 0.2).toLong else 0L
-    }
-    val desc = dto.desc match {
-      case Some(value) => value
-      case None => "technical"
-    }
-    PaymentInfo(dto.paymentId, sum, tax, desc)
-  }
+  def correctPayment(id: Int, p: Option[Long]): Option[Long] = p orElse getPaymentSum(id)
+
+  def correctTax(tax: Option[Long], sum: Long): Option[Long] = tax orElse computeTaxSum(sum)
+
+  def correctDesc(desc: Option[String]): Option[String] = desc.orElse(Some("technical"))
+
+  def correctPaymentInfo(paymentInfoDto: PaymentInfoDto): Option[PaymentInfo] = for {
+    sumCalculated <- correctPayment(paymentInfoDto.paymentId, paymentInfoDto.sum)
+    taxSum <- correctTax(paymentInfoDto.tax, sumCalculated)
+    desc <- correctDesc(paymentInfoDto.desc)
+
+  } yield PaymentInfo(paymentInfoDto.paymentId, sumCalculated, taxSum, desc)
+
+  val result: Seq[PaymentInfo] = (payments distinct) flatMap (x => correctPaymentInfo(x))
+
+  result foreach println
 
 
 
-  private val result2: Seq[PaymentInfo] = for {
-    dto <- payments.distinct
-    sum <- dto.sum.orElse(PaymentCenter.getPaymentSum(dto.paymentId))
-    tax = dto.tax.getOrElse(if (sum > 100L) (sum * 0.2).toLong else 0L)
-    desc = dto.desc.getOrElse("technical")
-  } yield PaymentInfo(dto.paymentId, sum, tax, desc)
 
 
-  private val paymentTax = (sum: Long) => if (sum > 100L) (sum * 0.2).toLong else 0L
 
-  private val result3: Seq[PaymentInfo] = for {
-    dto <- payments.distinct
-    sum <- dto.sum.orElse(getPaymentSum(dto.paymentId))
-  } yield PaymentInfo(dto.paymentId, sum, dto.tax.getOrElse(paymentTax(sum)), dto.desc.getOrElse("technical"))
+
+
+
+
+
+
+
+
+
+
+
+
+
+//
+//  private val result1: Seq[PaymentInfo] = for {
+//    dto <- payments.distinct
+//    sum <- dto.sum match {
+//      case Some(value) => Some(value)
+//      case None => PaymentCenter.getPaymentSum(dto.paymentId)
+//    }
+//    tax = dto.tax match {
+//      case Some(value) => value
+//      case None => if (sum > 100L) (sum * 0.2).toLong else 0L
+//    }
+//    desc = dto.desc match {
+//      case Some(value) => value
+//      case None => "technical"
+//    }
+//  } yield PaymentInfo(dto.paymentId, sum, tax, desc)
+//
+//  private val result1_1: Seq[PaymentInfo] = for {
+//    dto <- payments.distinct
+//    sum <- dto.sum match {
+//      case Some(value) => Some(value)
+//      case None => PaymentCenter.getPaymentSum(dto.paymentId)
+//    }
+//  } yield {
+//    val tax = dto.tax match {
+//      case Some(value) => value
+//      case None => if (sum > 100L) (sum * 0.2).toLong else 0L
+//    }
+//    val desc = dto.desc match {
+//      case Some(value) => value
+//      case None => "technical"
+//    }
+//    PaymentInfo(dto.paymentId, sum, tax, desc)
+//  }
+//
+//
+//
+//  private val result2: Seq[PaymentInfo] = for {
+//    dto <- payments.distinct
+//    sum <- dto.sum.orElse(PaymentCenter.getPaymentSum(dto.paymentId))
+//    tax = dto.tax.getOrElse(if (sum > 100L) (sum * 0.2).toLong else 0L)
+//    desc = dto.desc.getOrElse("technical")
+//  } yield PaymentInfo(dto.paymentId, sum, tax, desc)
+//
+//
+//  private val paymentTax = (sum: Long) => if (sum > 100L) (sum * 0.2).toLong else 0L
+//
+//  private val result3: Seq[PaymentInfo] = for {
+//    dto <- payments.distinct
+//    sum <- dto.sum.orElse(getPaymentSum(dto.paymentId))
+//  } yield PaymentInfo(dto.paymentId, sum, dto.tax.getOrElse(paymentTax(sum)), dto.desc.getOrElse("technical"))
 
 
 //  println(result1.equals(result2))
 //  println(result2.equals(result3))
-  println(result1)
+//  println(result1)
 
 }
