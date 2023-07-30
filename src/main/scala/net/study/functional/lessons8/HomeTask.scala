@@ -96,7 +96,7 @@ object HomeTask extends App {
 
     override def canProcess[T <: ProductType](product: T): Boolean = product match {
       case CreditCardPayment => false
-      case _                 => products.get(product).exists(_ <= geographicalPriority)
+      case _ => products.get(product).exists(_ <= geographicalPriority)
     }
   }))
 
@@ -117,7 +117,8 @@ object HomeTask extends App {
     PaymentRequest("0670000003", CreditPayment, 121, 2000),
     PaymentRequest("0670000004", CreditPayment, 405, 2000),
     PaymentRequest("0670000005", Charity, 120, 100),
-    PaymentRequest("0670000006", CreditCardPayment, 300, 500))
+    PaymentRequest("0670000006", CreditCardPayment, 300, 500)
+  )
 
   //
 
@@ -134,7 +135,7 @@ object HomeTask extends App {
   def chainDomains[IN, OUT](domains: List[BusinessDomain[IN, OUT]], default: BusinessDomain[IN, OUT]): BusinessDomain[IN, OUT] = {
     @tailrec
     def chain(domains: List[BusinessDomain[IN, OUT]], acc: BusinessDomain[IN, OUT]): BusinessDomain[IN, OUT] = domains match {
-      case Nil          => acc
+      case Nil => acc
       case head :: tail => chain(tail, acc orElse head)
     }
 
@@ -157,8 +158,7 @@ object HomeTask extends App {
   3) Partner payment server can deny some financial products sometimes for specific reasons, so if nearest server is not ready to process you pass it
   to the next one with next geographical priority which can process.
   4) If any server can't process catch it and store(logging it will be enough) for next reprocessing
-  5) Then after payment was processed analyze answer's code in right PostPaymentService and calculate PaymentStatus. Mapping you can
-  find in val statusCodes: Map[Status, Set[Int]]
+  5) Then after payment was processed analyze answer's code in right PostPaymentService and calculate PaymentStatus. Mapping you can find in val statusCodes: Map[Status, Set[Int]]
 
   GENERAL TASK:
   implement next flow:
@@ -169,8 +169,8 @@ object HomeTask extends App {
 
   Tips:
 
-  1)You have to call method canProcess[T <: Product](product: T): Boolean in PaymentService to ensure operation execution. This method not costly due to it cashing nature
-  2)This task you can solve with help of design pattern "Chain of Responsibility"
+  1) You have to call method canProcess[T <: Product](product: T): Boolean in PaymentService to ensure operation execution. This method not costly due to it cashing nature
+  2) This task you can solve with help of design pattern "Chain of Responsibility"
   3) You can chain domains with help of "chainDomains" function
   4) Implement PostPaymentService to construct PostPaymentDomain
   5) Create methods that create PaymentDomain and PostPaymentDomain respectively
@@ -182,7 +182,48 @@ object HomeTask extends App {
 
   /////////////////////////////Implementation///////////////////////////////////////
 
+  val statusPool: Seq[PostPaymentService] = statusCodes.map(x => new PostPaymentService {
+    override def serviceStatus: Status = x._1
 
+    override def codesToProcess: Set[Int] = x._2
+  }).toSeq
 
+  def createTokenProvider(msisdn: String, tempCode: Int): TokenProvider = {
+    (product: Product) => SecurityServer.generatePaymentToken(msisdn, product, tempCode)
+  }
+
+  def createPaymentDomain(service: PaymentService): PaymentDomain = {
+    case request if service.canProcess(request.productType) =>
+      PaymentResult(request, service.withdrawPayment(request, createTokenProvider(request.msisdn, request.tempCode)))
+  }
+
+  val alternativeCreatePaymentDomain: PaymentDomain = {
+    case request =>
+      println("Any server can't process request: " + request)
+      PaymentResult(request, PaymentResponse(0, 0))
+  }
+
+  def postPaymentDomain(service: PostPaymentService): PostPaymentDomain = {
+    case result if service.codesToProcess.contains(result.response.code) =>
+      PaymentStatus(result.request, service.serviceStatus)
+  }
+
+  val alternativePostPaymentDomain: PostPaymentDomain = {
+    case result => PaymentStatus(result.request, Default)
+  }
+
+  val paymentDomains: List[PaymentDomain] = serverPool.map(createPaymentDomain).toList
+
+  val postPaymentDomains: List[PostPaymentDomain] = statusPool.map(postPaymentDomain).toList
+
+  val paymentFunc = chainDomains(paymentDomains, alternativeCreatePaymentDomain)
+
+  val postFunc = chainDomains(postPaymentDomains, alternativePostPaymentDomain)
+
+  val businessFunc = paymentFunc andThen postFunc
+
+  val result = payments map businessFunc
+
+  println(result)
 
 }
