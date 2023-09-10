@@ -2,7 +2,6 @@ package net.study.functional.lesson10_OOP_classes.hometask.oop.errors
 
 // here you can declare your errors
 sealed trait Error {
-
   def errorMessage: String
 }
 
