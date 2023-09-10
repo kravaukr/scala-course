@@ -17,12 +17,12 @@ object HomeTask extends App with Mappers{
     with SignUpMapper
     with SignUpProcessor
 
-  private val signUpRequest: SignUpRequest = SignUpRequest(Option("test"), Option("testSurname"), Option("testLogin"), Option("pass"), Option("067847785409"))
+  private val signUpRequest: SignUpRequest = SignUpRequest(Option("test2"), Option("testSurname2"), Option("testLogin"), Option("pass"), Option("067847785409"))
 
   private val errorOrResponse: Either[Error, SignUpResponse] = handler.handle(signUpRequest)
 
   println(errorOrResponse)
-//  println(errorOrResponse.swap.map(_.errorMessage))
+  println(errorOrResponse.swap.map(_.errorMessage))
 
 
 }

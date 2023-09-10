@@ -3,7 +3,7 @@ package net.study.functional.lesson10_OOP_classes.hometask.oop.validator
 import net.study.functional.lesson10_OOP_classes.hometask.oop.errors.{EmptyStringError, Error, LackMappedParamError, ValidationError}
 import net.study.functional.lesson10_OOP_classes.hometask.oop.request.{SignInRequest, SignUpRequest}
 import net.study.functional.lesson10_OOP_classes.hometask.oop.validator.RequestValidator.{Login, Msisdn, Name, Surname, pass}
-import net.study.functional.lesson10_OOP_classes.hometask.oop.validator.ValidatorUtil.{validateDigitsParam, validateInvalidCharacterParam, validateLatinSymbolParam, validateLengthParam, validateStringEmptyParam}
+import net.study.functional.lesson10_OOP_classes.hometask.oop.validator.ValidatorUtil.{validateDigitsParam, validateInvalidCharacterParam, validateLatinSymbolParam, validateLengthParam, validateStringEmptyParam, validateUniqLoginParam}
 
 import scala.collection.immutable
 
@@ -17,24 +17,49 @@ trait RequestValidator[R] {
 
 }
 
-trait SignUpValidator extends RequestValidator[SignUpRequest] {
+trait SignUpValidator extends NameValidator with SurnameValidator with LoginValidator with MsisdnValidator {
   override def validate(request: SignUpRequest): Either[ValidationError, SignUpRequest] = {
+    val validations = validateName(request) ++ validateSurname(request) ++ validateLogin(request) ++ validateMsisdn(request)
+    val maybeErrors = validations.collect { case Left(error) => error }
+    if (maybeErrors.nonEmpty) Left(maybeErrors.reduceLeft(_ + _)) else Right(request)
+  }
+}
 
-    val validations: immutable.Seq[Either[ValidationError, Unit]] = List(
+trait NameValidator extends RequestValidator[SignUpRequest] {
+  def validateName(request: SignUpRequest): List[Either[ValidationError, Unit]] = {
+    List(
       validateStringEmptyParam(Name, request.name),
-      validateLatinSymbolParam(Name, request.name),
+      validateLatinSymbolParam(Name, request.name)
+    )
+  }
+}
+
+trait SurnameValidator extends RequestValidator[SignUpRequest] {
+  def validateSurname(request: SignUpRequest): List[Either[ValidationError, Unit]] = {
+    List(
       validateStringEmptyParam(Surname, request.surname),
-      validateLatinSymbolParam(Surname, request.surname),
+      validateLatinSymbolParam(Surname, request.surname)
+    )
+  }
+}
+
+trait LoginValidator extends RequestValidator[SignUpRequest] {
+  def validateLogin(request: SignUpRequest): List[Either[ValidationError, Unit]] = {
+    List(
       validateStringEmptyParam(Login, request.login),
       validateInvalidCharacterParam(Login, request.login),
+      validateUniqLoginParam(Login, request.login)
+    )
+  }
+}
+
+trait MsisdnValidator extends RequestValidator[SignUpRequest] {
+  def validateMsisdn(request: SignUpRequest): List[Either[ValidationError, Unit]] = {
+    List(
       validateStringEmptyParam(Msisdn, request.msisdn),
       validateDigitsParam(Msisdn, request.msisdn),
       validateLengthParam(Msisdn, request.msisdn)
     )
-
-    val maybeErrors = validations.map(_.swap).map(_.toOption).flatMap(_.toList)
-
-    if (maybeErrors.nonEmpty) Left(maybeErrors.reduceLeft(_ + _)) else Right(request)
   }
 }
 

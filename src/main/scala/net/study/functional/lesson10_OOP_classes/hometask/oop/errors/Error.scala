@@ -32,6 +32,10 @@ case object InvalidCharacterError extends Error {
   override val errorMessage: String = "invalidCharacterError"
 }
 
+case object InvalidUniqLoginError extends Error {
+  override val errorMessage: String = "InvalidUniqLoginError"
+}
+
 case object InvalidLengthError extends Error {
   override val errorMessage: String = "invalidLengthError"
 }
