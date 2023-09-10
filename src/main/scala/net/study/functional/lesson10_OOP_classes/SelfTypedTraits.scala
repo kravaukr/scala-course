@@ -1,6 +1,6 @@
 package net.study.functional.lesson10_OOP_classes
 
-import net.study.functional.Analisys
+//import net.study.functional.Analisys
 
 object SelfTypedTraits extends App {
 
@@ -43,15 +43,15 @@ trait ComputerScience {
   def programmingLanguage = "Scala"
 }
 
-trait WithBusinessLogic {
-
-  self: Analisys =>
-
-  def showBusinessLogic = {
-    self.createBusinessLogic
-  }
-
-}
+//trait WithBusinessLogic {
+//
+//  self: Analisys =>
+//
+//  def showBusinessLogic = {
+//    self.createBusinessLogic
+//  }
+//
+//}
 
 /// class Animal extends ComputerWorker
 
@@ -63,9 +63,9 @@ class Person1 extends ComputerWorker with Programmer with ComputerScience {
   val name: String = "adult"
 }
 
-class BusinessAnalysis extends WithBusinessLogic {
-
-  def createBusinessLogic: Unit = {println("Write Business logic")}
-}
+//class BusinessAnalysis extends WithBusinessLogic {
+//
+//  def createBusinessLogic: Unit = {println("Write Business logic")}
+//}
 
 

@@ -4,6 +4,7 @@ import net.study.functional.lesson10_OOP_classes.hometask.oop.errors.Error
 import net.study.functional.lesson10_OOP_classes.hometask.oop.mappers.Mapper
 import net.study.functional.lesson10_OOP_classes.hometask.oop.processor.Processor
 import net.study.functional.lesson10_OOP_classes.hometask.oop.validator.RequestValidator
+import net.study.functional.lesson10_OOP_classes.hometask.oop.mappers
 
 
 // implement this abstraction use self type trait mixin to implement validate -> map -> process logic
@@ -12,7 +13,11 @@ trait RequestHandler[R, DTO, RESP] {
 
   this: RequestValidator[R] with Mapper[R, DTO] with Processor[DTO, RESP] =>
 
-  def handle(request: R)(implicit mapperFunc: R => DTO): Either[Error, RESP] = ???
+  def handle(request: R)(implicit mapperFunc: R => DTO): Either[Error, RESP] = for {
+    validRequest <- validate(request)
+    dto <- map(validRequest)
+    response <- process(dto)
+  } yield response
 
 }
 

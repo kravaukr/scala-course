@@ -20,6 +20,22 @@ case object EmptyStringError extends Error {
   override val errorMessage: String = "emptyError"
 }
 
+case object InvalidLatinSymbolError extends Error {
+  override val errorMessage: String = "invalidSymbolError"
+}
+
+case object InvalidDigitsError extends Error {
+  override val errorMessage: String = "invalidDigitsError"
+}
+
+case object InvalidCharacterError extends Error {
+  override val errorMessage: String = "invalidCharacterError"
+}
+
+case object InvalidLengthError extends Error {
+  override val errorMessage: String = "invalidLengthError"
+}
+
 // base trait for errors with merging effect
 trait CombinedError[T <: CombinedError[T]] extends Error {
 
@@ -43,7 +59,9 @@ case class ValidationError(errors: Map[String, Error]) extends CombinedError[Val
    * This method has to merge this validationError with @param error
    * @return new merged combined Validation Error
    */
-  override def +(error: ValidationError): ValidationError = ???
+  override def +(error: ValidationError): ValidationError = {
+    ValidationError(errors ++ error.errors)
+  }
 
   // TODO
   /**
@@ -51,6 +69,12 @@ case class ValidationError(errors: Map[String, Error]) extends CombinedError[Val
    * errorMessage using next pattern: -  errorMessage : [ field1,field2,....], errorMessage2: [field3,field4]
    * @return merged combined Validation Error
    */
-  override val errorMessage: String = ???
+  override val errorMessage: String = {
+    errors.groupBy(_._2.errorMessage)
+      .map { case (errMsg, fields) =>
+        s"$errMsg: [${fields.keys.mkString(",")}]"
+      }
+      .mkString(spliterator)
+  }
 
 }
